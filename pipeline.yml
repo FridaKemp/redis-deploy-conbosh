@@ -1,0 +1,82 @@
+---
+jobs:
+- name: prepare-deployment
+  public: true
+  serial: true
+  plan:
+  - get: redis-concourse 
+  - task: update-cloud-config
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: amuessig/concourse-bosh}
+      params:
+        BOSH_ENVIRONMENT: {{bosh-director}}
+        BOSH_CA_CERT: {{bosh-cert}}
+        BOSH_CLIENT: {{bosh-username}}
+        BOSH_CLIENT_SECRET: {{bosh-password}}
+        CLOUD_CONFIG: ./cloud-config.yml
+      inputs:
+        - name: redis-concourse
+      run:
+        path: sh
+        args: 
+        - -exc
+        - |
+          bosh -n cloud-config
+- name: deploy-redis
+  public: true
+  serial: true
+  plan:
+  - aggregate:
+    - get: resource-bosh-stemcell
+    - get: resource-bosh-release-redis
+  - get: redis-concourse
+    passed: [prepare-deployment]
+    trigger: true
+  - put: resource-redis-bosh-deployment
+    params:
+      manifest: redis-concourse/manifest.yml
+      releases:
+        - resource-bosh-release-redis/*.tgz
+      stemcells:
+        - resource-bosh-stemcell/*.tgz
+      vars:
+        redis-deployment-name: {{redis-deployment-name}}
+        bosh-stemcell-name: {{bosh-stemcell-name}}
+        bosh-stemcell-version: {{bosh-stemcell-version}}
+        redis-password: {{redis-password}}
+
+resources:
+- name: redis-concourse
+  type: git
+  source: 
+    uri: https://github.com/eljuanchosf/redis-boshrelease-concourse
+    branch: master
+
+- name: resource-bosh-stemcell
+  type: bosh-io-stemcell
+  source:
+    name: {{bosh-stemcell-name}}
+    version_family: {{bosh-stemcell-version}}
+
+- name: resource-bosh-release-redis
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry-community/redis-boshrelease
+
+- name: resource-redis-bosh-deployment
+  type: bosh-deployment
+  source:
+    target: {{bosh-director}}
+    client: {{bosh-username}}
+    client_secret: {{bosh-password}}
+    ca_cert: {{bosh-cert}}
+    deployment: {{redis-deployment-name}} 
+
+resource_types:
+- name: bosh-deployment
+  type: docker-image
+  source:
+    repository: cloudfoundry/bosh-deployment-resource
