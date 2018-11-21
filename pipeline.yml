@@ -52,7 +52,7 @@ resources:
 - name: redis-concourse
   type: git
   source: 
-    uri: https://github.com/eljuanchosf/redis-boshrelease-concourse
+    uri: https://github.com/FridaKemp/redis-deploy-conbosh
     branch: master
 
 - name: resource-bosh-stemcell
