@@ -1,3 +1,3 @@
 bosh-stemcell-name: bosh-openstack-kvm-ubuntu-trusty-go_agent
 bosh-stemcell-version: latest
-redis-deployment-name: redis-deployment-bosh2
+redis-deployment-name: redis-deployment-bosh3
