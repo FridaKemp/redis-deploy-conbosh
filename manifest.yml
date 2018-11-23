@@ -7,7 +7,7 @@ addons:
     release: bpm
 
 instance_groups:
-- name: ((name_node))
+- name: ((redis-node-name))
   azs: [z1]
   instances: 2
   vm_type: default
